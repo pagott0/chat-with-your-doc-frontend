@@ -33,6 +33,7 @@ export const authOptions: NextAuthOptions = {
           id: data.user.id,
           email: data.user.email,
           accessToken: data.access_token,
+          name: data.user.name,
         }
       },
     }),
@@ -47,6 +48,7 @@ export const authOptions: NextAuthOptions = {
         token.accessToken = u.accessToken
         token.id = u.id
         token.email = u.email
+        token.name = u.name
       }
       return token
     },
@@ -55,6 +57,7 @@ export const authOptions: NextAuthOptions = {
         id: token.sub,
         email: token.email,
         accessToken: token.accessToken,
+        name: token.name,
       }
       return session
     },

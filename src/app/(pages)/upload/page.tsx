@@ -1,8 +1,9 @@
-// app/upload/page.tsx
+
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"
 import { redirect } from "next/navigation"
 import { UploadForm } from "@/components/upload/upload-form"
+
 
 
 export default async function UploadPage() {
@@ -11,9 +12,11 @@ export default async function UploadPage() {
   if (!session) {
     redirect("/login")
   }
+  
+
 
   return (
-    <main className="flex min-h-screen items-center justify-center p-4">
+    <main className="flex min-h-screen items-center ">
       <UploadForm />
     </main>
   )
