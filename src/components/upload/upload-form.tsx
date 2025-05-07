@@ -7,11 +7,13 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Progress } from "@/components/ui/progress"
 import { toast } from "sonner"
+import { useSession } from "next-auth/react"
 
 export function UploadForm() {
   const [file, setFile] = useState<File | null>(null)
   const [progress, setProgress] = useState(0)
   const [isUploading, setIsUploading] = useState(false)
+  const { data: session } = useSession()
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -23,10 +25,13 @@ export function UploadForm() {
     try {
       setIsUploading(true)
       setProgress(20)
-
-      const res = await fetch("/api/upload", {
+      
+      const res = await fetch("http://localhost:4000/upload", {
         method: "POST",
         body: formData,
+        headers: {
+          "Authorization": `Bearer ${session?.user?.accessToken}`
+        }
       })
 
       if (!res.ok) throw new Error("Erro no upload")
@@ -39,10 +44,10 @@ export function UploadForm() {
       })
     } catch (err) {
       console.error(err)
-      toast.error("Erro no upload", {
-        description: "Por favor, tente novamente.",
+      toast.error("Erro ao realizar upload", {
         style: {
           background: "red",
+          color: "white"
         }
       })
     } finally {
@@ -69,3 +74,4 @@ export function UploadForm() {
     </form>
   )
 }
+
