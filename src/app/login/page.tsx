@@ -12,15 +12,20 @@ export default function LoginPage() {
   const [error, setError] = useState('')
 
   const handleLogin = async () => {
-    const res = await signIn('credentials', {
-      email,
-      password,
-      redirect: true,
-      callbackUrl: '/',
-    })
-
-    if (res?.error) {
-      setError('Login inválido')
+    try {
+      const res = await signIn('credentials', {
+        email,
+        password,
+        redirect: true,
+        callbackUrl: '/',
+      })
+  
+      if (res?.error) {
+        setError('Login inválido')
+      }
+    } catch (error) {
+      console.error('Erro ao fazer login:', error)
+      setError('Erro ao fazer login')
     }
   }
 
