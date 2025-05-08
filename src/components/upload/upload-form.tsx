@@ -1,23 +1,22 @@
-// app/upload/upload-form.tsx
 'use client'
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Progress } from "@/components/ui/progress"
 import { toast } from "sonner"
 import { signOut, useSession } from "next-auth/react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { DocumentType, MessageType } from "@/app/helpers/types"
 import { cn } from "@/lib/utils"
-import { Download, Loader2, LogOutIcon, SendIcon, UploadIcon } from "lucide-react"
+import { Download, Loader2, LogOutIcon, SendIcon, UploadIcon, X } from "lucide-react"
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { useDropzone, DropzoneOptions } from "react-dropzone"
 
 export function UploadForm() {
   const [file, setFile] = useState<File | null>(null)
@@ -30,6 +29,7 @@ export function UploadForm() {
   const [isDownloading, setIsDownloading] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const queryClient = useQueryClient()
+  const [preview, setPreview] = useState<string | null>(null)
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -64,12 +64,41 @@ export function UploadForm() {
       return data
     },
     enabled: !!session?.user?.accessToken && !!selectedDocument?.id,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000 * 60 * 5, 
   })
 
   useEffect(() => {
     scrollToBottom()
   }, [selectedDocumentCompleteData?.messages])
+
+  const onDrop = useCallback((acceptedFiles: File[]) => {
+    const file = acceptedFiles[0]
+    if (file) {
+      setFile(file)
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setPreview(reader.result as string)
+      }
+      reader.readAsDataURL(file)
+    }
+  }, [])
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: {
+      'image/*': ['.png', '.jpg']
+    },
+    maxFiles: 1,
+    multiple: false,
+    onDragEnter: () => {},
+    onDragOver: () => {},
+    onDragLeave: () => {}
+  } as DropzoneOptions)
+
+  const removeFile = () => {
+    setFile(null)
+    setPreview(null)
+  }
 
   async function handleSubmitImage(e: React.FormEvent) {
     e.preventDefault()
@@ -90,10 +119,10 @@ export function UploadForm() {
         }
       })
 
-      if (!res.ok) throw new Error("Erro no upload")
+      if (!res.ok) throw new Error("Error uploading document")
 
       setProgress(100)
-      toast.success("Upload feito com sucesso!", {
+      toast.success("Document uploaded successfully!", {
         style: {
           background: "lightgreen",
         }
@@ -103,7 +132,7 @@ export function UploadForm() {
       await refetchDocuments()
     } catch (err) {
       console.error(err)
-      toast.error("Erro ao realizar upload", {
+      toast.error("Error uploading document", {
         style: {
           background: "red",
           color: "white"
@@ -164,7 +193,6 @@ export function UploadForm() {
       )
     } catch (error) {
       console.error(error)
-      // Revert optimistic update on error
       queryClient.setQueryData(
         ['selectedDocumentCompleteData', selectedDocument?.id],
         (old: DocumentType & { messages: MessageType[] }) => ({
@@ -247,25 +275,93 @@ export function UploadForm() {
           <LogOutIcon className="w-4 h-4 text-violet-400" />
         </div>
       </div>
-      {!selectedDocumentCompleteData ? isFetchingSelectedDocument ? <div className="w-full space-y-4 items-center flex flex-col p-4">
-        <div className="flex flex-row gap-2 items-center justify-center h-full w-full">
-          <Loader2 className="w-6 h-6 animate-spin" />
+      {!selectedDocumentCompleteData ? isFetchingSelectedDocument ? (
+        <div className="w-full space-y-4 items-center flex flex-col p-4">
+          <div className="flex flex-row gap-2 items-center justify-center h-full w-full">
+            <Loader2 className="w-6 h-6 animate-spin" />
+          </div>
         </div>
-      </div> : <form onSubmit={handleSubmitImage} className="w-full space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="file">Select the invoice image</Label>
-          <Input
-            id="file"
-            type="file"
-            accept="image/*"
-            onChange={(e) => setFile(e.target.files?.[0] || null)}
-            />
-        </div>
-        {isUploading && <Progress value={progress} />}
-        <Button type="submit" disabled={!file || isUploading}>
-          {isUploading ? "Sending..." : "Upload"}
-        </Button>
-      </form> : <div className="w-full space-y-4 items-center flex flex-col p-4">
+      ) : (
+        <form onSubmit={handleSubmitImage} className="w-full space-y-4 p-8">
+          <div className="space-y-4">
+            <div className="flex flex-col items-center justify-center w-full">
+              <div
+                {...getRootProps()}
+                className={cn(
+                  "w-full max-w-2xl h-64 border-2 border-dashed rounded-lg p-6 transition-colors duration-200 ease-in-out",
+                  isDragActive ? "border-violet-400 bg-violet-400/10" : "border-gray-300 hover:border-violet-400",
+                  preview ? "h-auto" : ""
+                )}
+              >
+                <input {...getInputProps()} />
+                {preview ? (
+                  <div className="relative w-full">
+                    <img
+                      src={preview}
+                      alt="Preview"
+                      className="w-full h-64 object-contain rounded-lg"
+                    />
+                    <Button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        removeFile()
+                      }}
+                      className="absolute top-2 right-2 p-1 bg-red-500 rounded-full hover:bg-red-600 transition-colors"
+                    >
+                      <X className="w-4 h-4 text-white" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full text-center cursor-pointer">
+                    <UploadIcon className="w-12 h-12 text-violet-400 mb-4" />
+                    <p className="text-lg font-medium text-gray-700">
+                      {isDragActive ? (
+                        "Drop the image here"
+                      ) : (
+                        <>
+                          Drag and drop your invoice image here, or{" "}
+                          <span className="text-violet-400">browse</span>
+                        </>
+                      )}
+                    </p>
+                    <p className="text-sm text-gray-500 mt-2">
+                      Supports PNG and JPG
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+            {isUploading && (
+              <div className="w-full max-w-2xl mx-auto space-y-2">
+                <Progress value={progress} className="h-2 bg-violet-400" />
+                <p className="text-sm text-center text-gray-500">
+                  Uploading... {progress}%
+                </p>
+              </div>
+            )}
+            <div className="flex justify-center">
+              <Button
+                type="submit"
+                disabled={!file || isUploading}
+                className={cn(
+                  "w-full max-w-2xl bg-violet-400 hover:bg-violet-500 transition-transform duration-150",
+                  !file && "opacity-50 cursor-not-allowed"
+                )}
+              >
+                {isUploading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Uploading...
+                  </>
+                ) : (
+                  "Upload Invoice"
+                )}
+              </Button>
+            </div>
+          </div>
+        </form>
+      ) : <div className="w-full space-y-4 items-center flex flex-col p-4">
         <div className="flex flex-row gap-4 items-center justify-between">
           <h2 className="text-lg font-semibold">{selectedDocument?.fileName.split(".")[0]}</h2>
           <TooltipProvider>
