@@ -149,16 +149,17 @@ export function UploadForm() {
     <div className="flex flex-row w-full h-full">
       <div className="flex flex-col h-screen bg-accent w-1/5 p-4 space-y-4">
         {session?.user?.name && <h1 className="text-2xl font-bold">Hello, {session.user?.name}!</h1> }
+        <span className="text-violet-400 font-semibold text-sm">What do you wanna discover about your invoices today?</span>
         <div className="flex flex-col gap-2 max-h-[85vh] overflow-y-auto no-scrollbar">
           <div onMouseDown={() => setSelectedDocument(null)} className="flex flex-row gap-2 items-center justify-between border border-violet-400 p-4 rounded-md cursor-pointer hover:bg-violet-400/20 transition-transform duration-150">
             <span className="text-violet-400 font-semibold">Upload new invoice</span>
               <UploadIcon className="w-4 h-4 text-violet-400" />
           </div>
           {documents?.map((document) => (
-            <div onClick={() => {
+            <div onMouseDown={() => {
                 setSelectedDocument(document)
             }} key={document.id} className={cn("flex flex-col gap-2 border p-4 rounded-md cursor-pointer hover:bg-violet-400/20 transition-transform duration-150", selectedDocument?.id === document.id && "bg-accent-foreground/5")}>
-              <h2>{document.fileName}</h2>
+              <h2>{document.fileName.split(".")[0]}</h2>
             </div>
           ))}
         </div>
