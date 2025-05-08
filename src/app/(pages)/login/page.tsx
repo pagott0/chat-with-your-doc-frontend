@@ -1,17 +1,24 @@
 'use client'
 
-import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { signIn } from 'next-auth/react'
 import { useState } from 'react'
+import { signIn } from 'next-auth/react'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Loader2, LogIn } from 'lucide-react'
+import { toast } from 'sonner'
+import Link from 'next/link'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
 
-  const handleLogin = async () => {
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsLoading(true)
+
     try {
       const res = await signIn('credentials', {
         email,
@@ -21,39 +28,84 @@ export default function LoginPage() {
       })
   
       if (res?.error) {
-        setError('Login inválido')
+        toast.error('Credenciais inválidas', {
+          style: {
+            background: 'red',
+            color: 'white'
+          }
+        })
       }
     } catch (error) {
       console.error('Erro ao fazer login:', error)
-      setError('Erro ao fazer login')
+      toast.error('Erro ao fazer login', {
+        style: {
+          background: 'red',
+          color: 'white'
+        }
+      })
+    } finally {
+      setIsLoading(false)
     }
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center">
-      <Card className="p-6 rounded shadow-md w-full max-w-md space-y-2 flex flex-col">
-        <h2 className="text-xl font-bold mb-4">Login</h2>
-        <Input
-          type="email"
-          placeholder="Email"
-          className="w-full p-2 border"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-        <Input
-          type="password"
-          placeholder="Senha"
-          className="w-full p-2 border"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-        {error && <p className="text-red-600 mb-2">{error}</p>}
-        <Button
-          onClick={handleLogin}
-          className="w-full p-2 rounded"
-        >
-          Entrar
-        </Button>
+    <div className="flex min-h-screen items-center justify-center bg-background">
+      <Card className="w-full max-w-md justify-between h-[22rem]">
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl font-bold text-center">Login</CardTitle>
+          <CardDescription className="text-center">
+            Enter your credentials to access your account
+          </CardDescription>
+        </CardHeader>
+        <form onSubmit={handleLogin} className='h-full justify-between flex flex-col'>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="your@email.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                disabled={isLoading}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                disabled={isLoading}
+              />
+            </div>
+          </CardContent>
+          <CardFooter className='flex flex-col gap-2'>
+            <Button 
+              type="submit" 
+              className="w-full"
+              disabled={isLoading || email === '' || password === '' || !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Logging in...
+                </>
+              ) : (
+                <>
+                  <LogIn className="mr-2 h-4 w-4" />
+                  Enter
+                </>
+              )}
+            </Button>
+            <span className='text-xs'>Don&apos;t have an account? <Link href="/register" className='text-violet-400'>Register</Link></span>
+            
+          </CardFooter>
+        </form>
       </Card>
     </div>
   )
