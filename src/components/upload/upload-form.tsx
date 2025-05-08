@@ -12,7 +12,6 @@ import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { DocumentType, MessageType } from "@/app/helpers/types"
 import { cn } from "@/lib/utils"
 import { Download, Loader2, LogOutIcon, SendIcon, UploadIcon } from "lucide-react"
-import { FixedSizeList as List } from 'react-window'
 import {
   Tooltip,
   TooltipContent,
@@ -134,7 +133,7 @@ export function UploadForm() {
 
     queryClient.setQueryData(
       ['selectedDocumentCompleteData', selectedDocument?.id],
-      (old: any) => ({
+      (old: DocumentType & { messages: MessageType[] }) => ({
         ...old,
         messages: optimisticMessages
       })
@@ -155,7 +154,7 @@ export function UploadForm() {
       // Update cache with server response
       queryClient.setQueryData(
         ['selectedDocumentCompleteData', selectedDocument?.id],
-        (old: any) => ({
+        (old: DocumentType & { messages: MessageType[] }) => ({
           ...old,
           messages: [
             ...old.messages.filter((m: MessageType) => m.id !== -1),
@@ -164,10 +163,11 @@ export function UploadForm() {
         })
       )
     } catch (error) {
+      console.error(error)
       // Revert optimistic update on error
       queryClient.setQueryData(
         ['selectedDocumentCompleteData', selectedDocument?.id],
-        (old: any) => ({
+        (old: DocumentType & { messages: MessageType[] }) => ({
           ...old,
           messages: old.messages.filter((m: MessageType) => m.id !== -1)
         })
@@ -222,16 +222,7 @@ export function UploadForm() {
     })
   };
   
-  const MessageRow = ({ index, style }: { index: number; style: React.CSSProperties }) => {
-    const message = selectedDocumentCompleteData?.messages[index]
-    if (!message) return null
-
-    return (
-      <div style={style} className={`p-3 rounded-xl ${message.role === 'user' ? 'bg-violet-950/30 self-end max-w-[75%]' : 'bg-violet-700/30 self-start max-w-[75%]'}`}>
-        <p>{message.content}</p>
-      </div>
-    )
-  }
+  
 
   return (
     <div className="flex flex-row w-full h-full">
@@ -293,19 +284,16 @@ export function UploadForm() {
         </div>  
         
         
-        {selectedDocumentCompleteData?.messages.length > 0 ? <div className="w-[65%] h-[80vh]">
-          <List
-            height={window.innerHeight * 0.8}
-            itemCount={selectedDocumentCompleteData.messages.length}
-            itemSize={100}
-            width="100%"
-            className="no-scrollbar"
-          >
-            {MessageRow}
-          </List>
+        {selectedDocumentCompleteData?.messages.length > 0 ? <div className="flex flex-col gap-2 w-[65%] h-[80vh] overflow-y-auto no-scrollbar space-y-6">
+          {selectedDocumentCompleteData?.messages.map((message) => (
+            <div key={message.id} className={`p-3 rounded-xl ${message.role === 'user' ? 'bg-violet-950/30 self-end max-w-[75%]' : 'bg-violet-700/30 self-start max-w-[75%]'}` }>
+              <p>{message.content}</p>
+            </div>
+          ))}
           {isAwaitingResponse && <div className="p-3 rounded-xl bg-violet-700/30 self-start">
             <p className="animate-pulse animate-infinite">Wait, I&apos;m thinking...</p>
           </div>}
+          <div ref={messagesEndRef} />
         </div> : <div className="text-center w-[65%] h-[80vh] flex flex-col items-center justify-center gap-2">
           <span className="text-gray-600 font-semibold">No messages yet, ask me anything about your invoice!</span>
           <span className="text-violet-400">{'"What is the total amount of the invoice?"'}</span>
