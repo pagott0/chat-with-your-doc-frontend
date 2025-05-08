@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input"
 import { Progress } from "@/components/ui/progress"
 import { toast } from "sonner"
 import { signOut, useSession } from "next-auth/react"
-import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { DocumentType, MessageType } from "@/app/helpers/types"
 import { cn } from "@/lib/utils"
 import { Download, Loader2, LogOutIcon, SendIcon, UploadIcon, X } from "lucide-react"
@@ -28,16 +27,18 @@ export function UploadForm() {
   const [isAwaitingResponse, setIsAwaitingResponse] = useState(false)
   const [isDownloading, setIsDownloading] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  const queryClient = useQueryClient()
   const [preview, setPreview] = useState<string | null>(null)
+  const [documentsList, setDocumentsList] = useState<DocumentType[]>([])
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }
 
-  const { data: documents, refetch: refetchDocuments } = useQuery<DocumentType[]>({
-    queryKey: ['documents'],
-    queryFn: async () => {
+  //tried to use useQuery but I was having a issue with it lagging when I tried to use queryClient.setQueryData
+  //decided to use useEffect for simplicity
+  useEffect(() => {
+    if(!session?.user?.accessToken) return
+    const fetchDocuments = async () => {
       const res = await fetch("http://localhost:4000/upload", {
         headers: {
           "Authorization": `Bearer ${session?.user?.accessToken}`
@@ -45,31 +46,14 @@ export function UploadForm() {
       })
       if (!res.ok) throw new Error('Failed to fetch documents')
       const data = await res.json()
-      return data
-    },
-    enabled: !!session?.user?.accessToken,
-    refetchOnWindowFocus: false,
-  })
-
-  const { data: selectedDocumentCompleteData, isFetching: isFetchingSelectedDocument } = useQuery<DocumentType & { messages: MessageType[] }>({
-    queryKey: ['selectedDocumentCompleteData', selectedDocument?.id],
-    queryFn: async () => {
-      const res = await fetch(`http://localhost:4000/upload/${selectedDocument?.id}`, {
-        headers: {
-          "Authorization": `Bearer ${session?.user?.accessToken}`
-        }
-      })
-      if (!res.ok) throw new Error('Failed to fetch document')
-      const data = await res.json()
-      return data
-    },
-    enabled: !!session?.user?.accessToken && !!selectedDocument?.id,
-    staleTime: 1000 * 60 * 5, 
-  })
+      setDocumentsList(data)
+    }
+    fetchDocuments()
+  }, [session?.user?.accessToken])
 
   useEffect(() => {
     scrollToBottom()
-  }, [selectedDocumentCompleteData?.messages])
+  }, [selectedDocument?.messages])
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const file = acceptedFiles[0]
@@ -118,8 +102,17 @@ export function UploadForm() {
           "Authorization": `Bearer ${session?.user?.accessToken}`
         }
       })
-
-      if (!res.ok) throw new Error("Error uploading document")
+      if (!res.ok) {
+        setIsUploading(false)
+        setTimeout(() => setProgress(0), 2000)
+        toast.error("Error uploading document", {
+          style: {
+            background: "red",
+            color: "white"
+          }
+        })
+        throw new Error("Error uploading document")
+      }
 
       setProgress(100)
       toast.success("Document uploaded successfully!", {
@@ -128,8 +121,13 @@ export function UploadForm() {
         }
       })
       const data: DocumentType = await res.json()
-      setSelectedDocument(data)
-      await refetchDocuments()
+      setSelectedDocument({
+        ...data,
+        messages: []
+      })
+      setDocumentsList([data, ...documentsList])
+      //queryClient.setQueryData(['documents'], (old: DocumentType[]) => [ data, ...old])
+      //refetchDocuments()
     } catch (err) {
       console.error(err)
       toast.error("Error uploading document", {
@@ -146,32 +144,36 @@ export function UploadForm() {
 
   const handleSubmitQuestion = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!questionValue || !selectedDocumentCompleteData) return
+    if (!questionValue || !selectedDocument) return
     setQuestionValue("")
     setIsAwaitingResponse(true)
 
     // Optimistic update using queryClient
     const optimisticMessages = [
-      ...selectedDocumentCompleteData.messages,
+      ...selectedDocument.messages,
       {
         id: -1,
         content: questionValue,
         role: "user"
       }
     ]
+    setSelectedDocument({
+      ...selectedDocument,
+      messages: optimisticMessages
+    })
 
-    queryClient.setQueryData(
+    /* queryClient.setQueryData(
       ['selectedDocumentCompleteData', selectedDocument?.id],
       (old: DocumentType & { messages: MessageType[] }) => ({
         ...old,
         messages: optimisticMessages
       })
-    )
+    ) */
 
     try {
       const res = await fetch(`http://localhost:4000/upload/${selectedDocument?.id}/message`, {
         method: "POST",
-        body: JSON.stringify({ content: questionValue, imageExtractedText: selectedDocumentCompleteData?.extractedText }),
+        body: JSON.stringify({ content: questionValue, imageExtractedText: selectedDocument?.extractedText }),
         headers: {
           "Authorization": `Bearer ${session?.user?.accessToken}`,
           "Content-Type": "application/json"
@@ -179,9 +181,17 @@ export function UploadForm() {
       })
       if (!res.ok) throw new Error("Erro ao enviar mensagem")
       const data = await res.json()
+
+      setSelectedDocument({
+        ...selectedDocument,
+        messages: [
+          ...selectedDocument.messages.filter((m: MessageType) => m.id !== -1),
+          ...data
+        ]
+      })
       
       // Update cache with server response
-      queryClient.setQueryData(
+      /* queryClient.setQueryData(
         ['selectedDocumentCompleteData', selectedDocument?.id],
         (old: DocumentType & { messages: MessageType[] }) => ({
           ...old,
@@ -190,16 +200,21 @@ export function UploadForm() {
             ...data
           ]
         })
-      )
+      ) */
+
     } catch (error) {
       console.error(error)
-      queryClient.setQueryData(
+      setSelectedDocument({
+        ...selectedDocument,
+        messages: selectedDocument.messages.filter((m: MessageType) => m.id !== -1)
+      })
+      /* queryClient.setQueryData(
         ['selectedDocumentCompleteData', selectedDocument?.id],
         (old: DocumentType & { messages: MessageType[] }) => ({
           ...old,
           messages: old.messages.filter((m: MessageType) => m.id !== -1)
         })
-      )
+      ) */
       toast.error("Erro ao enviar mensagem", {
         style: {
           background: "red",
@@ -262,7 +277,7 @@ export function UploadForm() {
             <span className="text-violet-400 font-semibold">Upload new invoice</span>
               <UploadIcon className="w-4 h-4 text-violet-400" />
           </div>
-          {documents?.map((document) => (
+          {documentsList?.map((document: DocumentType) => (
             <div onMouseDown={() => {
                 setSelectedDocument(document)
             }} key={document.id} className={cn("flex flex-col gap-2 border p-4 rounded-md cursor-pointer hover:bg-violet-400/20 transition-transform duration-150", selectedDocument?.id === document.id && "bg-accent-foreground/5")}>
@@ -275,7 +290,7 @@ export function UploadForm() {
           <LogOutIcon className="w-4 h-4 text-violet-400" />
         </div>
       </div>
-      {!selectedDocumentCompleteData ? isFetchingSelectedDocument ? (
+      {!selectedDocument ? false ? (
         <div className="w-full space-y-4 items-center flex flex-col p-4">
           <div className="flex flex-row gap-2 items-center justify-center h-full w-full">
             <Loader2 className="w-6 h-6 animate-spin" />
@@ -303,11 +318,12 @@ export function UploadForm() {
                     />
                     <Button
                       type="button"
+                      size="icon"
                       onClick={(e) => {
                         e.stopPropagation()
                         removeFile()
                       }}
-                      className="absolute top-2 right-2 p-1 bg-red-500 rounded-full hover:bg-red-600 transition-colors"
+                      className="absolute top-2 right-2 bg-purple-500 rounded-full hover:bg-purple-600 transition-colors"
                     >
                       <X className="w-4 h-4 text-white" />
                     </Button>
@@ -369,7 +385,7 @@ export function UploadForm() {
               <TooltipTrigger asChild className="cursor-pointer">
                 <Download className={cn("w-5 h-5 text-violet-400 cursor-pointer", isDownloading && 'opacity-50 cursor-not-allowed')} onMouseDown={async () => {
                   if (isDownloading) return
-                  await handleDownloadDocument(selectedDocumentCompleteData?.id, selectedDocumentCompleteData?.fileName.split(".")[0])
+                  await handleDownloadDocument(selectedDocument?.id, selectedDocument?.fileName.split(".")[0])
                 }}/>
               </TooltipTrigger>
               <TooltipContent>
@@ -380,8 +396,8 @@ export function UploadForm() {
         </div>  
         
         
-        {selectedDocumentCompleteData?.messages.length > 0 ? <div className="flex flex-col gap-2 w-[65%] h-[80vh] overflow-y-auto no-scrollbar space-y-6">
-          {selectedDocumentCompleteData?.messages.map((message) => (
+        {selectedDocument?.messages?.length > 0 ? <div className="flex flex-col gap-2 w-[65%] h-[80vh] overflow-y-auto no-scrollbar space-y-6">
+          {selectedDocument?.messages.map((message) => (
             <div key={message.id} className={`p-3 rounded-xl ${message.role === 'user' ? 'bg-violet-950/30 self-end max-w-[75%]' : 'bg-violet-700/30 self-start max-w-[75%]'}` }>
               <p>{message.content}</p>
             </div>
