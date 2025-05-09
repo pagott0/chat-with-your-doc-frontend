@@ -126,8 +126,8 @@ export function UploadForm() {
         messages: []
       })
       setDocumentsList([data, ...documentsList])
-      //queryClient.setQueryData(['documents'], (old: DocumentType[]) => [ data, ...old])
-      //refetchDocuments()
+      setFile(null)
+      setPreview(null)
     } catch (err) {
       console.error(err)
       toast.error("Error uploading document", {
@@ -270,7 +270,7 @@ export function UploadForm() {
   return (
     <div className="flex flex-row w-full h-full">
       <div className="flex flex-col h-screen bg-accent w-1/5 p-4 space-y-4">
-        {session?.user?.name && <h1 className="text-2xl font-bold">Hello, {session.user?.name}!</h1> }
+        {session?.user?.name && <h1 className="text-2xl font-bold">Hello, {session.user?.name.split(" ")[0]}!</h1> }
         <span className="text-violet-400 font-semibold text-sm">What do you wanna discover about your invoices today?</span>
         <div className="flex flex-col gap-2 max-h-[85vh] overflow-y-auto no-scrollbar">
           <div onMouseDown={() => setSelectedDocument(null)} className="flex flex-row gap-2 items-center justify-between border border-violet-400 p-4 rounded-md cursor-pointer hover:bg-violet-400/20 transition-transform duration-150">
@@ -408,8 +408,8 @@ export function UploadForm() {
           <div ref={messagesEndRef} />
         </div> : <div className="text-center w-[65%] h-[80vh] flex flex-col items-center justify-center gap-2">
           <span className="text-gray-600 font-semibold">No messages yet, ask me anything about your invoice!</span>
-          <span className="text-violet-400">{'"What is the total amount of the invoice?"'}</span>
-          <span className="text-violet-400">{'"How about the due date?"'}</span>
+          <span onClick={() => setQuestionValue('"What is the total amount of the invoice?"')} className="text-violet-400 cursor-pointer">{'"What is the total amount of the invoice?"'}</span>
+          <span onClick={() => setQuestionValue('"How about the due date?"')} className="text-violet-400 cursor-pointer">{'"How about the due date?"'}</span>
           </div>}
         <div className="border border-violet-400 rounded-2xl p-2 w-[65%] flex flex-row">
           <Input 
