@@ -354,6 +354,9 @@ export function UploadForm() {
                 <p className="text-sm text-center text-gray-500">
                   Uploading... {progress}%
                 </p>
+                <p className="text-sm text-center text-gray-500">
+                  Wait, this might take a while, we are extracting all the important information from your invoice.
+                </p>
               </div>
             )}
             <div className="flex justify-center">
@@ -368,7 +371,7 @@ export function UploadForm() {
                 {isUploading ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Uploading... Wait, this might take a while, we are extracting all the important information from your invoice.
+                    Uploading...
                   </>
                 ) : (
                   "Upload Invoice"
