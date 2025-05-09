@@ -1,6 +1,6 @@
 # 🖥️ Frontend - Chat With Your Doc
 
-Check it on: https://chat-with-your-doc-frontend.vercel.app/upload
+Check it on: https://chat-with-your-doc-frontend.vercel.app
 
 Upload any invoice image and ask questions about it. Want to know what are the taxes of your invoice? What are the quantity of each item? Who is the issuer? We answer it for you on a fast and easy way.
 
