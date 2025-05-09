@@ -60,7 +60,6 @@ export default function RegisterPage() {
         }
       })
 
-      // Sign in the user after successful registration
       await signIn('credentials', {
         email,
         password,

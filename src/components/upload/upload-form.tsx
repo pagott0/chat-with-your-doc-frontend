@@ -148,7 +148,6 @@ export function UploadForm() {
     setQuestionValue("")
     setIsAwaitingResponse(true)
 
-    // Optimistic update using queryClient
     const optimisticMessages = [
       ...selectedDocument.messages,
       {
@@ -189,18 +188,7 @@ export function UploadForm() {
           ...data
         ]
       })
-      
-      // Update cache with server response
-      /* queryClient.setQueryData(
-        ['selectedDocumentCompleteData', selectedDocument?.id],
-        (old: DocumentType & { messages: MessageType[] }) => ({
-          ...old,
-          messages: [
-            ...old.messages.filter((m: MessageType) => m.id !== -1),
-            ...data
-          ]
-        })
-      ) */
+     
 
     } catch (error) {
       console.error(error)
@@ -250,11 +238,10 @@ export function UploadForm() {
   
     const link = document.createElement('a');
     link.href = url;
-    link.download = `${documentName}.pdf`; // nome sugerido
+    link.download = `${documentName}.pdf`;
     document.body.appendChild(link);
     link.click();
   
-    // limpeza
     link.remove();
     window.URL.revokeObjectURL(url);
     setIsDownloading(false)
