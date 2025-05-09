@@ -46,11 +46,9 @@ Make sure you have the following installed:
     The application will be available at:
     👉 http://localhost:3000
 
-🛠️ Scripts
-dev – Runs the app in development mode
+## 🛠️ Scripts
 
-build – Builds the app for production
-
-start – Starts the production build
-
-lint – Runs ESLint
+- `dev` – Runs the app in development mode  
+- `build` – Builds the app for production  
+- `start` – Starts the production build  
+- `lint` – Runs ESLint
