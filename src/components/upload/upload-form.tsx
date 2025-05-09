@@ -393,6 +393,7 @@ export function UploadForm() {
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
+          {isDownloading && <Loader2 className="w-4 h-4 animate-spin text-violet-400" />}
         </div>  
         
         
