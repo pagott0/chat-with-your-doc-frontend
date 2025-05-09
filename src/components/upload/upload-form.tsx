@@ -39,7 +39,7 @@ export function UploadForm() {
   useEffect(() => {
     if(!session?.user?.accessToken) return
     const fetchDocuments = async () => {
-      const res = await fetch("http://localhost:4000/upload", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/upload`, {
         headers: {
           "Authorization": `Bearer ${session?.user?.accessToken}`
         }
@@ -95,7 +95,7 @@ export function UploadForm() {
       setIsUploading(true)
       setProgress(20)
       
-      const res = await fetch("http://localhost:4000/upload", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/upload`, {
         method: "POST",
         body: formData,
         headers: {
@@ -171,7 +171,7 @@ export function UploadForm() {
     ) */
 
     try {
-      const res = await fetch(`http://localhost:4000/upload/${selectedDocument?.id}/message`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/upload/${selectedDocument?.id}/message`, {
         method: "POST",
         body: JSON.stringify({ content: questionValue, imageExtractedText: selectedDocument?.extractedText }),
         headers: {
@@ -228,7 +228,7 @@ export function UploadForm() {
 
   const handleDownloadDocument = async (documentId: number, documentName: string) => {
     setIsDownloading(true)
-    const res = await fetch(`http://localhost:4000/upload/${documentId}/download`, {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/upload/${documentId}/download`, {
       headers: {
         "Authorization": `Bearer ${session?.user?.accessToken}`
       }
