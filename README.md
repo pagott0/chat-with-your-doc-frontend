@@ -1,7 +1,11 @@
 # 🖥️ Frontend - Chat With Your Doc
 
+Check it on: https://chat-with-your-doc-frontend.vercel.app/upload
+Upload any invoice image and ask questions about it. Want to know what are the taxes of your invoice? What are the quantity of each item? Who is the issuer? We answer it for you on a fast and easy way.
+
 This is the frontend of the project, built with [Next.js](https://nextjs.org/) and TypeScript.
 You can also see the backend on https://github.com/pagott0/chat-with-your-doc-backend
+
 
 ## 🚀 Getting Started Locally
 
