@@ -9,11 +9,12 @@ import { Label } from '@/components/ui/label'
 import { Loader2, LogIn } from 'lucide-react'
 import { toast } from 'sonner'
 import Link from 'next/link'
-
+import { useSearchParams } from 'next/navigation'
 export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const url = useSearchParams()
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -26,6 +27,8 @@ export default function LoginPage() {
         redirect: true,
         callbackUrl: '/',
       })
+
+      console.log(res)
   
       if (res?.error) {
         toast.error('Credenciais inválidas', {
@@ -84,7 +87,8 @@ export default function LoginPage() {
               />
             </div>
           </CardContent>
-          <CardFooter className='flex flex-col gap-2'>
+          <CardFooter className='flex flex-col gap-2 pt-2'>
+            {url.get('error') && <span className='text-red-500 text-sm'>Invalid credentials, please try again.</span>}
             <Button 
               type="submit" 
               className="w-full"
