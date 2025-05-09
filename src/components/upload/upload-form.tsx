@@ -368,7 +368,7 @@ export function UploadForm() {
                 {isUploading ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Uploading...
+                    Uploading... Wait, this might take a while, we are extracting all the important information from your invoice.
                   </>
                 ) : (
                   "Upload Invoice"
